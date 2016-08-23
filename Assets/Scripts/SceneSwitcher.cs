@@ -4,9 +4,8 @@ using UnityEngine.SceneManagement;
 
 public class SceneSwitcher : MonoBehaviour
 {
-    public void switchToScene()
+    public void switchToScene(string sceneName)
     {
-        //SceneManager.LoadScene(sceneName);
-        print("Loading LoginScreen");
+        SceneManager.LoadScene(sceneName);
     }
 }
