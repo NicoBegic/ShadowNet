@@ -10,6 +10,6 @@ namespace Inventory
 
         private GameObject _containerObject;
 
-        private IList<InventoryItem> _items;
+        private IList<Item> _items;
     }
 }

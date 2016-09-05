@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace Inventory
 {
-    public class InventoryManager : MonoBehaviour
+    public class Manager : MonoBehaviour
     {
 
     }

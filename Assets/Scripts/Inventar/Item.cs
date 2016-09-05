@@ -9,7 +9,7 @@ namespace Inventory
     /// <summary>
     /// InventoryItem represents an item in the player's inventory.
     /// </summary>
-    public class InventoryItem : MonoBehaviour
+    public class Item : MonoBehaviour
     {
         private static GameObject InventoryItemPrefab;
 
@@ -25,7 +25,7 @@ namespace Inventory
         /// Creates a new InventoryItem with blank values.
         /// </summary>
         /// <require>InventoryItem.hasPrefab()</require>
-        public InventoryItem()
+        public Item()
         {
             _itemObject = Instantiate(InventoryItemPrefab);
             assignInputFields();
