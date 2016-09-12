@@ -4,12 +4,10 @@ using System.Collections.Generic;
 
 namespace Inventory
 {
-    public class Container : MonoBehaviour
+    public class ItemContainer : MonoBehaviour
     {
         private string _name;
-
         private GameObject _containerObject;
-
         private IList<Item> _items;
     }
 }
