@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.Events;
-using System.Collections;
 using UnityEngine.UI;
+using System;
+using System.Collections;
 
 namespace Inventory
 {
@@ -10,119 +11,127 @@ namespace Inventory
     /// </summary>
     public class Item : MonoBehaviour
     {
+        public event EventHandler WeightChangedEvent;
+
         private const int VALUE_FRACTIONAL_DIGITS = 2;
         private const int WEIGHT_FRACTIONAL_DIGITS = 3;
 
-        private static GameObject ItemPrefab;
+        public string _name { get; private set; }
+        public string _description { get; private set; }
+        public bool _isSelected { get; private set; }
+        public bool _isCarried { get; private set; }
+        public DecimalNumber _value { get; private set; } //_value is in nusen (1/100 nuyen).
+        public DecimalNumber _weight { get; private set; } //_weight is in grams.
 
-        public int _weight; //_weight is in grams.
+        public UnityEvent InstantiateHeader;
 
-        private bool _isSelected, _isCarried;
-        private string _name, _description;
-        private int _value; //_value is in cents.
-
-        private GameObject _itemObject;
         private Toggle _selectionToggle, _carryToggle;
         private InputField _nameField, _descriptionField, _valueField, _weightField;
 
         /// <summary>
-        /// Creates a new InventoryItem with blank values.
+        /// Initializes the Item.
         /// </summary>
-        /// <require>InventoryItem.hasPrefab()</require>
-        public Item()
+        void Start()
         {
-            _itemObject = Instantiate(ItemPrefab);
             assignInputFields();
             registerToggleListeners();
             registerInputFieldListeners();
         }
 
-        /// <returns>Wether or not InventoryItem has been assigned a valid prefab.</returns>
-        public static bool hasPrefab()
+        /// <summary>
+        /// Destroys the gameObject this Item is attached to.
+        /// </summary>
+        public void delete()
         {
-            return isValidInventoryItemPrefab(ItemPrefab);
+            Destroy(gameObject);
         }
 
         /// <summary>
-        /// Examines wether a GameObject can be used as a prefab for InventoryItem.
-        /// The GameObject must have four children named "Name", "Description", "Value" and "Weight", each of which must have an InputField component attached.
+        /// Makes this Items gameObject invisible.
         /// </summary>
-        /// <param name="prefab">The prefab that should be examined.</param>
-        /// <returns>Wether the GameObject is suitable.</returns>
-        public static bool isValidInventoryItemPrefab(GameObject prefab)
+        public void hide()
         {
-            if (prefab == null) return false;
-            GameObject instance = Instantiate(prefab);
-
-            return containsProperToggles(instance) && containsProperInputFields(instance);
+            gameObject.SetActive(false);
         }
 
-        private static bool containsProperToggles(GameObject instance)
+        /// <summary>
+        /// Initializes an Item with the given values.
+        /// </summary>
+        /// <param name="name">The Item's name.</param>
+        /// <param name="description">The Item's description.</param>
+        /// <param name="value">The Item's value in nusen (1/100 nuyen).</param>
+        /// <param name="isCarried">Wether this Item is carried or not.</param>
+        /// <param name="weight">The Item's weight in grams.</param>
+        public void initialize(string name, string description, DecimalNumber value, bool isCarried, DecimalNumber weight)
         {
-            ArrayList toggleList = new ArrayList(2);
+            _name = name;
+            _description = description;
+            _value = value;
+            _isCarried = isCarried;
+            _weight = weight;
+            displayNewValues();
+        }
 
-            toggleList.Add(instance.transform.Find("IsSelected"));
-            toggleList.Add(instance.transform.Find("IsCarried"));
-
-            foreach (Transform toggle in toggleList)
+        /// <summary>
+        /// Moves this Item down by 1, if there is space.
+        /// </summary>
+        /// <returns>If the Item was successfully moved.</returns>
+        public bool moveDown()
+        {
+            if (transform.parent.childCount <= transform.GetSiblingIndex() + 1)
             {
-                if (toggle == null || toggle.GetComponent<Toggle>() == null)
-                {
-                    return false;
-                }
+                return false;
             }
 
+            transform.SetSiblingIndex(transform.GetSiblingIndex() + 1);
             return true;
         }
 
-        private static bool containsProperInputFields(GameObject instance)
+        /// <summary>
+        /// Moves this Item up by 1, if there is space.
+        /// </summary>
+        /// <returns>If the Item was successfully moved.</returns>
+        public bool moveUp()
         {
-            ArrayList fieldList = new ArrayList(4);
-
-            fieldList.Add(instance.transform.Find("Name"));
-            fieldList.Add(instance.transform.Find("Description"));
-            fieldList.Add(instance.transform.Find("Value"));
-            fieldList.Add(instance.transform.Find("Weight"));
-
-            foreach (Transform field in fieldList)
+            if (transform.parent.childCount <= 0)
             {
-                if (field == null || field.GetComponent<InputField>() == null)
-                {
-                    return false;
-                }
+                return false;
             }
 
+            transform.SetSiblingIndex(transform.GetSiblingIndex() - 1);
             return true;
         }
 
-        /// <param name="prefab">The prefab that should be used as the GameObject for newly created InventoryItems</param>
-        /// <require>InventoryItem.isValidInventoryItemPrefab(prefab)</require>
-        /// <ensure>ItemPrefab == prefab</ensure>
-        public void setInventoryItemPrefab(GameObject prefab)
+        /// <summary>
+        /// Makes the Item visible.
+        /// </summary>
+        public void show()
         {
-            ItemPrefab = prefab;
+            gameObject.SetActive(true);
         }
 
         /// <param name="parent">The Transform component of an Object that is supposed to be this Item's parent.</param>
         /// <require>parent != null</require>
-        /// <ensure>_itemObject.transform.parent == parent</ensure>
-        public void assignParent(Transform parent)
+        /// <require>this.transform != null</require>
+        /// <ensure>transform.parent == parent</ensure>
+        public void setParent(Transform parent)
         {
-            _itemObject.transform.parent = parent;
+            transform.parent = parent;
         }
 
+        #region Constructor helper methods
         private void assignToggles()
         {
-            _selectionToggle = _itemObject.transform.Find("IsSelected").GetComponent<Toggle>();
-            _carryToggle = _itemObject.transform.Find("IsCarried").GetComponent<Toggle>();
+            _selectionToggle = transform.Find("IsSelected").GetComponent<Toggle>();
+            _carryToggle = transform.Find("IsCarried").GetComponent<Toggle>();
         }
 
         private void assignInputFields()
         {
-            _nameField = _itemObject.transform.Find("Name").GetComponent<InputField>();
-            _descriptionField = _itemObject.transform.Find("Beschreibung").GetComponent<InputField>();
-            _valueField = _itemObject.transform.Find("Wert").GetComponent<InputField>();
-            _weightField = _itemObject.transform.Find("Gewicht").GetComponent<InputField>();
+            _nameField = transform.Find("Name").GetComponent<InputField>();
+            _descriptionField = transform.Find("Beschreibung").GetComponent<InputField>();
+            _valueField = transform.Find("Wert").GetComponent<InputField>();
+            _weightField = transform.Find("Gewicht").GetComponent<InputField>();
         }
 
         private void registerToggleListeners()
@@ -161,23 +170,39 @@ namespace Inventory
         {
             _valueField.onValidateInput += delegate (string inputText, int inputIndex, char inputChar)
             {
-                return (InputParser.isValidInput(inputText, VALUE_FRACTIONAL_DIGITS)) ? inputChar : '\0';
+                return (DecimalNumber.isValidInput(VALUE_FRACTIONAL_DIGITS, inputText)) ? inputChar : '\0';
             };
 
             _valueField.onEndEdit.AddListener(new UnityAction<string>(delegate (string inputText)
             {
-                _value = InputParser.parseInput(inputText, VALUE_FRACTIONAL_DIGITS);
+                _value = DecimalNumber.GetValue(VALUE_FRACTIONAL_DIGITS, inputText);
             }));
 
             _weightField.onValidateInput += delegate (string inputText, int inputIndex, char inputChar)
             {
-                return (InputParser.isValidInput(inputText, WEIGHT_FRACTIONAL_DIGITS)) ? inputChar : '\0';
+                return (DecimalNumber.isValidInput(WEIGHT_FRACTIONAL_DIGITS, inputText)) ? inputChar : '\0';
             };
 
             _weightField.onEndEdit.AddListener(new UnityAction<string>(delegate (string inputText)
             {
-                _weight = InputParser.parseInput(inputText, WEIGHT_FRACTIONAL_DIGITS);
+                _weight = DecimalNumber.GetValue(WEIGHT_FRACTIONAL_DIGITS, inputText);
+                weightChanged();
             }));
+        }
+        #endregion
+
+        private void weightChanged()
+        {
+            WeightChangedEvent(this, null);
+        }
+
+        private void displayNewValues()
+        {
+            _nameField.text = _name;
+            _descriptionField.text = _description;
+            _valueField.text = _value.ToString();
+            _carryToggle.isOn = _isCarried;
+            _weightField.text = _weight.ToString();
         }
     }
 }
