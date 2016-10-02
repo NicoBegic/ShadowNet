@@ -16,14 +16,12 @@ namespace Inventory
         private const int VALUE_FRACTIONAL_DIGITS = 2;
         private const int WEIGHT_FRACTIONAL_DIGITS = 3;
 
-        public string _name { get; private set; }
-        public string _description { get; private set; }
-        public bool _isSelected { get; private set; }
-        public bool _isCarried { get; private set; }
-        public DecimalNumber _value { get; private set; } //_value is in nusen (1/100 nuyen).
-        public DecimalNumber _weight { get; private set; } //_weight is in grams.
-
-        public UnityEvent InstantiateHeader;
+        public string _name { get { return _nameField.text; } }
+        public string _description { get { return _descriptionField.text; } }
+        public bool _isSelected { get { return _selectionToggle.isOn; } }
+        public bool _isCarried { get { return _carryToggle.isOn; } }
+        public DecimalNumber _value { get { return DecimalNumber.GetValue(2, _valueField.text); } } //_value is in Nuyen.
+        public DecimalNumber _weight { get { return DecimalNumber.GetValue(3, _weightField.text); } } //_weight is in Kilograms.
 
         private Toggle _selectionToggle, _carryToggle;
         private InputField _nameField, _descriptionField, _valueField, _weightField;
@@ -34,8 +32,7 @@ namespace Inventory
         void Start()
         {
             assignInputFields();
-            registerToggleListeners();
-            registerInputFieldListeners();
+            registerNumberInputFields();
         }
 
         /// <summary>
@@ -64,12 +61,11 @@ namespace Inventory
         /// <param name="weight">The Item's weight in grams.</param>
         public void initialize(string name, string description, DecimalNumber value, bool isCarried, DecimalNumber weight)
         {
-            _name = name;
-            _description = description;
-            _value = value;
-            _isCarried = isCarried;
-            _weight = weight;
-            displayNewValues();
+            _nameField.text = name;
+            _descriptionField.text = description;
+            _valueField.text = value.ToString();
+            _carryToggle.isOn = isCarried;
+            _weightField.text = weight.ToString();
         }
 
         /// <summary>
@@ -129,65 +125,24 @@ namespace Inventory
         private void assignInputFields()
         {
             _nameField = transform.Find("Name").GetComponent<InputField>();
-            _descriptionField = transform.Find("Beschreibung").GetComponent<InputField>();
-            _valueField = transform.Find("Wert").GetComponent<InputField>();
-            _weightField = transform.Find("Gewicht").GetComponent<InputField>();
-        }
-
-        private void registerToggleListeners()
-        {
-            _selectionToggle.onValueChanged.AddListener(new UnityAction<bool>(delegate (bool value)
-            {
-                _isSelected = value;
-            }));
-
-            _carryToggle.onValueChanged.AddListener(new UnityAction<bool>(delegate (bool value)
-            {
-                _isCarried = value;
-            }));
-        }
-
-        private void registerInputFieldListeners()
-        {
-            registerTextInputFields();
-            registerNumberInputFields();
-        }
-
-        private void registerTextInputFields()
-        {
-            _nameField.onEndEdit.AddListener(new UnityAction<string>(delegate (string inputText)
-            {
-                _name = inputText;
-            }));
-
-            _descriptionField.onEndEdit.AddListener(new UnityAction<string>(delegate (string inputText)
-            {
-                _description = inputText;
-            }));
+            _descriptionField = transform.Find("Description").GetComponent<InputField>();
+            _valueField = transform.Find("Value").GetComponent<InputField>();
+            _weightField = transform.Find("Weight").GetComponent<InputField>();
         }
 
         private void registerNumberInputFields()
         {
             _valueField.onValidateInput += delegate (string inputText, int inputIndex, char inputChar)
             {
-                return (DecimalNumber.isValidInput(VALUE_FRACTIONAL_DIGITS, inputText)) ? inputChar : '\0';
+                string newText = inputText.Insert(inputIndex, inputChar.ToString());
+                return (DecimalNumber.isValidInput(VALUE_FRACTIONAL_DIGITS, newText)) ? inputChar : '\0';
             };
-
-            _valueField.onEndEdit.AddListener(new UnityAction<string>(delegate (string inputText)
-            {
-                _value = DecimalNumber.GetValue(VALUE_FRACTIONAL_DIGITS, inputText);
-            }));
 
             _weightField.onValidateInput += delegate (string inputText, int inputIndex, char inputChar)
             {
-                return (DecimalNumber.isValidInput(WEIGHT_FRACTIONAL_DIGITS, inputText)) ? inputChar : '\0';
+                string newText = inputText.Insert(inputIndex, inputChar.ToString());
+                return (DecimalNumber.isValidInput(WEIGHT_FRACTIONAL_DIGITS, newText)) ? inputChar : '\0';
             };
-
-            _weightField.onEndEdit.AddListener(new UnityAction<string>(delegate (string inputText)
-            {
-                _weight = DecimalNumber.GetValue(WEIGHT_FRACTIONAL_DIGITS, inputText);
-                weightChanged();
-            }));
         }
         #endregion
 
@@ -196,13 +151,9 @@ namespace Inventory
             WeightChangedEvent(this, null);
         }
 
-        private void displayNewValues()
-        {
-            _nameField.text = _name;
-            _descriptionField.text = _description;
-            _valueField.text = _value.ToString();
-            _carryToggle.isOn = _isCarried;
-            _weightField.text = _weight.ToString();
-        }
+        /// <summary>
+        /// To create a new Item, instantiate an Item prefab and set its parent.
+        /// </summary>
+        private Item() { }
     }
 }
