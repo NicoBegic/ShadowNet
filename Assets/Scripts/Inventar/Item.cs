@@ -16,13 +16,59 @@ namespace Inventory
         private const int VALUE_FRACTIONAL_DIGITS = 2;
         private const int WEIGHT_FRACTIONAL_DIGITS = 3;
 
-        public string _Name { get { return _nameField.text; } }
-        public string _Description { get { return _descriptionField.text; } }
-        public bool _IsSelected { get { return _selectionToggle.isOn; } set { _IsSelected = value; } }
-        public bool _IsCarried { get { return _carryToggle.isOn; } set { _IsCarried = value; } }
+        public bool _IsSelected
+        {
+            get
+            {
+                return _selectionToggle.isOn;
+            }
+
+            set
+            {
+                _selectionToggle.isOn = value;
+            }
+        }
+        public string _Name
+        {
+            get
+            {
+                return _nameField.text;
+            }
+        }
+        public string _Description
+        {
+            get
+            {
+                return
+                    _descriptionField.text;
+            }
+        }
+        public bool _IsCarried
+        {
+            get
+            {
+                return _carryToggle.isOn;
+            }
+
+            set
+            {
+                _carryToggle.isOn = value;
+            }
+        }
+        public DecimalNumber _Value
+        {
+            get
+            {
+                return DecimalNumber.GetValue(2, _valueField.text);
+            }
+        } //_value is in Nuyen.
+        public DecimalNumber _Weight
+        {
+            get;
+            private set;
+        } //_weight is in Kilograms.
+
         public bool _currentWeightChangeAllowed = true;
-        public DecimalNumber _Value { get { return DecimalNumber.GetValue(2, _valueField.text); } } //_value is in Nuyen.
-        public DecimalNumber _Weight { get; private set; } //_weight is in Kilograms.
 
         private Toggle _selectionToggle, _carryToggle;
         private InputField _nameField, _descriptionField, _valueField, _weightField;
