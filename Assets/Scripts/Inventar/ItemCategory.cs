@@ -17,14 +17,15 @@ namespace Inventory
         public bool _IsSelected { get { return _isSelectedToggle.isOn; } }
         public bool _currentWeightChangeAllowed;
 
-        public DecimalNumber _Weight { get { return _weight; } }
+        public DecimalNumber _TotalCarriedWeight { get { return _totalCarriedWeight; } }
 
         public GameObject _categoryHeaderPrefab;
         public GameObject _ItemPrefab;
 
         private IList<T> _items;
 
-        private DecimalNumber _weight = DecimalNumber.GetValue(3, 0);
+        private DecimalNumber _totalWeight = DecimalNumber.GetValue(3, 0);
+        private DecimalNumber _totalCarriedWeight = DecimalNumber.GetValue(3, 0);
 
         private GameObject _categoryHeader;
 
@@ -34,16 +35,29 @@ namespace Inventory
 
         void Start()
         {
+            _categoryHeader = Instantiate(_categoryHeaderPrefab);
+            _categoryHeader.SetActive(false);
             _items = new List<T>();
+            _isSelectedToggle = GetComponent<Toggle>();
 
-            _isSelectedToggle = gameObject.GetComponentInChildren<Toggle>();
+            registerToggles();
         }
 
         /// <param name="item">An Item that should be added to the bottom of this ItemCategory</param>
         public void addItem(T item)
         {
+            if (!_totalWeight.canAdd(item._Weight))
+            {
+                return;
+            }
+
             _items.Add(item);
             item.setParent(_itemContainer);
+            if (!_isSelectedToggle.isOn)
+            {
+                item.hide();
+            }
+            updateWeight();
         }
 
         /// <param name="items">Items that should be added to the bottom of this Category.</param>
@@ -103,7 +117,7 @@ namespace Inventory
             for (int i = (_items.Count - 1); i >= 0; i--)
             {
                 T item = _items[i];
-                if (firstNonSelectedEncountered)
+                if (firstNonSelectedEncountered && item._IsSelected)
                 {
                     item.moveDown();
 
@@ -148,17 +162,21 @@ namespace Inventory
         /// <param name="container">The GameObject that should be the parent of the Items in this ItemCategory.</param>
         public void setItemContainer(Transform container)
         {
-            if (_categoryHeader == null)
-            {
-                _categoryHeader = Instantiate(_categoryHeaderPrefab);
-            }
-
             _itemContainer = container;
 
             _categoryHeader.transform.SetParent(_itemContainer);
+            _categoryHeader.SetActive(_isSelectedToggle.isOn);
             foreach (T item in _items)
             {
                 item.setParent(_itemContainer);
+                if (_isSelectedToggle.isOn)
+                {
+                    item.show();
+                }
+                else
+                {
+                    item.hide();
+                }
             }
         }
 
@@ -169,29 +187,92 @@ namespace Inventory
 
         private void onWeightChanged(object sender, EventArgs e)
         {
-            DecimalNumber oldWeight = _Weight;
-            updateTotalWeight();
-            WeightChangedEvent(this, null);
-
-            if (_currentWeightChangeAllowed)
+            if (isTotalWeightValid())
             {
-                return;
+                DecimalNumber oldWeight = _totalWeight;
+                updateWeight();
+                WeightChangedEvent(this, null);
+
+                if (_currentWeightChangeAllowed)
+                {
+                    return;
+                }
+
+                _totalWeight = oldWeight;
+                _currentWeightChangeAllowed = true;
             }
 
-            _weight = oldWeight;
             T item = (T)sender;
             item._currentWeightChangeAllowed = false;
-            _currentWeightChangeAllowed = true;
         }
 
-        private void updateTotalWeight()
+        private bool isTotalWeightValid()
         {
             DecimalNumber totalWeight = DecimalNumber.GetValue(3, 0);
             foreach (T item in _items)
             {
+                if (!totalWeight.canAdd(item._Weight))
+                {
+                    return false;
+                }
                 totalWeight = totalWeight.plus(item._Weight);
             }
-            _weight = totalWeight;
+            return true;
+        }
+
+        private void updateWeight()
+        {
+            DecimalNumber totalCarriedWeight = DecimalNumber.GetValue(3, 0);
+            DecimalNumber totalWeight = DecimalNumber.GetValue(3, 0);
+            foreach (T item in _items)
+            {
+                if (item._IsSelected)
+                {
+                    totalCarriedWeight = totalCarriedWeight.plus(item._Weight);
+                }
+                totalWeight = totalWeight.plus(item._Weight);
+            }
+            _totalCarriedWeight = totalCarriedWeight;
+            _totalWeight = totalWeight;
+        }
+
+        private void registerToggles()
+        {
+            _isSelectedToggle.onValueChanged.AddListener(delegate (bool isOn)
+            {
+                if (isOn)
+                {
+                    foreach (T item in _items)
+                    {
+                        item.show();
+                    }
+                }
+                else
+                {
+                    foreach (T item in _items)
+                    {
+                        item.hide();
+                    }
+                }
+                _categoryHeader.SetActive(isOn);
+            });
+
+            _categoryHeader.transform.Find("IsSelected").GetComponent<Toggle>().onValueChanged.AddListener(delegate (bool isOn)
+            {
+                foreach (T item in _items)
+                {
+                    item._IsSelected = isOn;
+                }
+            });
+
+            _categoryHeader.transform.Find("IsCarried").GetComponent<Toggle>().onValueChanged.AddListener(delegate (bool isOn)
+            {
+                foreach (T item in _items)
+                {
+                    item._IsCarried = isOn;
+                }
+                updateWeight();
+            });
         }
 
         /// <summary>

@@ -18,8 +18,8 @@ namespace Inventory
 
         public string _Name { get { return _nameField.text; } }
         public string _Description { get { return _descriptionField.text; } }
-        public bool _IsSelected { get { return _selectionToggle.isOn; } }
-        public bool _IsCarried { get { return _carryToggle.isOn; } }
+        public bool _IsSelected { get { return _selectionToggle.isOn; } set { _IsSelected = value; } }
+        public bool _IsCarried { get { return _carryToggle.isOn; } set { _IsCarried = value; } }
         public bool _currentWeightChangeAllowed = true;
         public DecimalNumber _Value { get { return DecimalNumber.GetValue(2, _valueField.text); } } //_value is in Nuyen.
         public DecimalNumber _Weight { get; private set; } //_weight is in Kilograms.
@@ -33,7 +33,7 @@ namespace Inventory
         void Start()
         {
             assignInputFields();
-            registerNumberInputFields();
+            registerListeners();
         }
 
         /// <summary>
@@ -131,8 +131,13 @@ namespace Inventory
             _weightField = transform.Find("Weight").GetComponent<InputField>();
         }
 
-        private void registerNumberInputFields()
+        private void registerListeners()
         {
+            _carryToggle.onValueChanged.AddListener(delegate (bool isOn)
+            {
+                weightChanged();
+            });
+
             _valueField.onValidateInput += delegate (string inputText, int inputIndex, char inputChar)
             {
                 string newText = inputText.Insert(inputIndex, inputChar.ToString());
