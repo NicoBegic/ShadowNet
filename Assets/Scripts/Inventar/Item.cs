@@ -7,7 +7,7 @@ using System.Collections;
 namespace Inventory
 {
     /// <summary>
-    /// InventoryItem represents an item in the player's inventory.
+    /// Item represents an item in the player's inventory.
     /// </summary>
     public class Item : MonoBehaviour
     {
@@ -16,12 +16,13 @@ namespace Inventory
         private const int VALUE_FRACTIONAL_DIGITS = 2;
         private const int WEIGHT_FRACTIONAL_DIGITS = 3;
 
-        public string _name { get { return _nameField.text; } }
-        public string _description { get { return _descriptionField.text; } }
-        public bool _isSelected { get { return _selectionToggle.isOn; } }
-        public bool _isCarried { get { return _carryToggle.isOn; } }
-        public DecimalNumber _value { get { return DecimalNumber.GetValue(2, _valueField.text); } } //_value is in Nuyen.
-        public DecimalNumber _weight { get { return DecimalNumber.GetValue(3, _weightField.text); } } //_weight is in Kilograms.
+        public string _Name { get { return _nameField.text; } }
+        public string _Description { get { return _descriptionField.text; } }
+        public bool _IsSelected { get { return _selectionToggle.isOn; } }
+        public bool _IsCarried { get { return _carryToggle.isOn; } }
+        public bool _currentWeightChangeAllowed = true;
+        public DecimalNumber _Value { get { return DecimalNumber.GetValue(2, _valueField.text); } } //_value is in Nuyen.
+        public DecimalNumber _Weight { get; private set; } //_weight is in Kilograms.
 
         private Toggle _selectionToggle, _carryToggle;
         private InputField _nameField, _descriptionField, _valueField, _weightField;
@@ -89,7 +90,7 @@ namespace Inventory
         /// <returns>If the Item was successfully moved.</returns>
         public bool moveUp()
         {
-            if (transform.parent.childCount <= 0)
+            if (transform.GetSiblingIndex() <= 0)
             {
                 return false;
             }
@@ -141,7 +142,23 @@ namespace Inventory
             _weightField.onValidateInput += delegate (string inputText, int inputIndex, char inputChar)
             {
                 string newText = inputText.Insert(inputIndex, inputChar.ToString());
-                return (DecimalNumber.isValidInput(WEIGHT_FRACTIONAL_DIGITS, newText)) ? inputChar : '\0';
+
+                if (!DecimalNumber.isValidInput(WEIGHT_FRACTIONAL_DIGITS, newText))
+                {
+                    return '\0';
+                }
+
+                _Weight = DecimalNumber.GetValue(3, newText);
+                weightChanged();
+
+                if (_currentWeightChangeAllowed)
+                {
+                    return inputChar;
+                }
+
+                _Weight = DecimalNumber.GetValue(3, inputText);
+                _currentWeightChangeAllowed = true;
+                return '\0'; //TODO: Put error message here.
             };
         }
         #endregion
