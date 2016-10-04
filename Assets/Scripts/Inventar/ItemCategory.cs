@@ -14,38 +14,88 @@ namespace Inventory
     {
         public event EventHandler WeightChangedEvent;
 
-        public bool _IsSelected { get { return _isSelectedToggle.isOn; } }
-        public bool _currentWeightChangeAllowed;
+        public bool _IsSelected
+        {
+            get
+            {
+                return _isSelectedToggle.isOn;
+            }
+        }
+        public bool _currentWeightChangeAllowed { private get; set; }
 
-        public DecimalNumber _TotalCarriedWeight { get { return _totalCarriedWeight; } }
+        public DecimalNumber _TotalCarriedWeight
+        {
+            get
+            {
+                return _totalCarriedWeight;
+            }
+        }
 
-        public GameObject _categoryHeaderPrefab;
-        public GameObject _ItemPrefab;
+        public Transform _itemContainer
+        {
+            private get
+            {
+                return _itemContainer;
+            }
+
+            set
+            {
+                setItemContainer(value);
+            }
+        }
 
         private IList<T> _items;
 
         private DecimalNumber _totalWeight = DecimalNumber.GetValue(3, 0);
         private DecimalNumber _totalCarriedWeight = DecimalNumber.GetValue(3, 0);
 
+        private GameObject _categoryHeaderPrefab;
+        private GameObject _ItemPrefab;
         private GameObject _categoryHeader;
 
         private Toggle _isSelectedToggle;
 
-        private Transform _itemContainer;
-
         void Start()
         {
-            _categoryHeader = Instantiate(_categoryHeaderPrefab);
-            _categoryHeader.SetActive(false);
             _items = new List<T>();
             _isSelectedToggle = GetComponent<Toggle>();
 
-            registerToggles();
+            registerCategoryToggle();
+        }
+
+        /// <summary>
+        /// Initializes the ItemCategory to be ready for use.
+        /// </summary>
+        /// <param name="headerPrefab">The prefab for this ItemCategory's header.</param>
+        /// <param name="itemPrefab">The prefab for an empty Item in this ItemCategory.</param>
+        /// <param name="itemContainer">The Transform of the parent of this ItemCategory's Items.</param>
+        /// 
+        /// <require>headerPrefab != null</require>
+        /// <require>itemPrefab != null</require>
+        /// <require>itemContainer != null</require>
+        public void initialize(GameObject headerPrefab, GameObject itemPrefab, Transform itemContainer)
+        {
+            if (headerPrefab == null) { throw new ArgumentNullException("headerPrefab"); }
+            if (itemPrefab == null) { throw new ArgumentNullException("itemPrefab"); }
+            if (itemContainer == null) { throw new ArgumentNullException("itemContainer"); }
+
+            _categoryHeaderPrefab = headerPrefab;
+            _ItemPrefab = itemPrefab;
+
+            registerHeaderToggles();
+            setItemContainer(itemContainer);
         }
 
         /// <param name="item">An Item that should be added to the bottom of this ItemCategory</param>
+        /// 
+        /// <require>item != null</require>
         public void addItem(T item)
         {
+            if (item == null)
+            {
+                return;
+            }
+
             if (!_totalWeight.canAdd(item._Weight))
             {
                 return;
@@ -61,10 +111,16 @@ namespace Inventory
         }
 
         /// <param name="items">Items that should be added to the bottom of this Category.</param>
+        /// 
+        /// <require>items != null</require>
         public void addItems(IEnumerable<T> items)
         {
             foreach (T item in items)
             {
+                if (item == null)
+                {
+                    return;
+                }
                 addItem(item);
             }
         }
@@ -159,27 +215,6 @@ namespace Inventory
             }
         }
 
-        /// <param name="container">The GameObject that should be the parent of the Items in this ItemCategory.</param>
-        public void setItemContainer(Transform container)
-        {
-            _itemContainer = container;
-
-            _categoryHeader.transform.SetParent(_itemContainer);
-            _categoryHeader.SetActive(_isSelectedToggle.isOn);
-            foreach (T item in _items)
-            {
-                item.setParent(_itemContainer);
-                if (_isSelectedToggle.isOn)
-                {
-                    item.show();
-                }
-                else
-                {
-                    item.hide();
-                }
-            }
-        }
-
         private void registerWeightEvent(T item)
         {
             item.WeightChangedEvent += new EventHandler(onWeightChanged);
@@ -236,7 +271,7 @@ namespace Inventory
             _totalWeight = totalWeight;
         }
 
-        private void registerToggles()
+        private void registerCategoryToggle()
         {
             _isSelectedToggle.onValueChanged.AddListener(delegate (bool isOn)
             {
@@ -256,7 +291,10 @@ namespace Inventory
                 }
                 _categoryHeader.SetActive(isOn);
             });
+        }
 
+        private void registerHeaderToggles()
+        {
             _categoryHeader.transform.Find("IsSelected").GetComponent<Toggle>().onValueChanged.AddListener(delegate (bool isOn)
             {
                 foreach (T item in _items)
@@ -275,8 +313,28 @@ namespace Inventory
             });
         }
 
+        private void setItemContainer(Transform container)
+        {
+            _itemContainer = container;
+
+            _categoryHeader = (GameObject)Instantiate(_categoryHeaderPrefab, _itemContainer);
+            _categoryHeader.SetActive(_isSelectedToggle.isOn);
+            foreach (T item in _items)
+            {
+                item.setParent(_itemContainer);
+                if (_isSelectedToggle.isOn)
+                {
+                    item.show();
+                }
+                else
+                {
+                    item.hide();
+                }
+            }
+        }
+
         /// <summary>
-        /// To create an ItemCategory, instantiate an ItemCategory prefab and set its parent.
+        /// To create an ItemCategory, instantiate an ItemCategory prefab, add an ItemCategory component and initialize it.
         /// </summary>
         private ItemCategory() { }
     }
