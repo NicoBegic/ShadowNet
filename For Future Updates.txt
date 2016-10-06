@@ -1,0 +1,4 @@
+Inventar
+	-Items sortieren und suchen
+	-Waffenhalterungen implementieren
+	-Mehrzeilige Beschreibungsfelder

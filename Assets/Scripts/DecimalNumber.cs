@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 /// <invariant>_value >= 0</invariant>
 public class DecimalNumber : IComparable<DecimalNumber>
 {
-    private static IDictionary<KeyValuePair<int, int>, DecimalNumber> _values = new Dictionary<KeyValuePair<int, int>, DecimalNumber>();
+    private static IDictionary<KeyValuePair<int, int>, DecimalNumber> Values = new Dictionary<KeyValuePair<int, int>, DecimalNumber>();
 
     /// <param name="numberOfFractionalDigits">How many fractional digits the decimal number is supposed to have. Has to be >= 0.</param>
     /// <param name="value">The full value of the desired DecimalNumber.
@@ -27,13 +27,13 @@ public class DecimalNumber : IComparable<DecimalNumber>
         KeyValuePair<int, int> numberPair = new KeyValuePair<int, int>(numberOfFractionalDigits, value);
         DecimalNumber dictionaryResult;
 
-        if (_values.TryGetValue(numberPair, out dictionaryResult))
+        if (Values.TryGetValue(numberPair, out dictionaryResult))
         {
             return dictionaryResult;
         }
 
         DecimalNumber result = new DecimalNumber(numberPair.Key, numberPair.Value);
-        _values.Add(numberPair, result);
+        Values.Add(numberPair, result);
         return result;
     }
 
@@ -45,7 +45,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
     {
         if (!isValidInput(numberOfFractionalDigits, input)) { throw new FormatException("The input is not correctly formatted as a decimal number with " + numberOfFractionalDigits + " fractional digits!"); } //TODO: remove when merging into master.
 
-        return GetValue(numberOfFractionalDigits, InputParser.parseInput(numberOfFractionalDigits, input));
+        return GetValue(numberOfFractionalDigits, InputParser.ParseInput(numberOfFractionalDigits, input));
     }
 
     /// <param name="numberOfFractionalDigits">The maximum of how many fractional digits the decimal number is supposed to have.</param>
@@ -53,7 +53,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
     /// <returns>Wether the input has the proper format.</returns>
     public static bool isValidInput(int numberOfFractionalDigits, string input)
     {
-        return InputParser.isValidInput(numberOfFractionalDigits, input);
+        return InputParser.IsValidInput(numberOfFractionalDigits, input);
     }
 
     private readonly int _NUMBER_OF_FRACTIONAL_DIGITS;
@@ -70,7 +70,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
         }
 
         KeyValuePair<string, string> valueStrings = getComparableStrings(ToString(), summand.ToString());
-        if (InputParser.isNumberTooLargeForInt32(valueStrings.Key) || InputParser.isNumberTooLargeForInt32(valueStrings.Value))
+        if (InputParser.IsNumberTooLargeForInt32(valueStrings.Key) || InputParser.IsNumberTooLargeForInt32(valueStrings.Value))
         {
             return false;
         }
@@ -185,7 +185,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
         }
     }
 
-    public override bool Equals(Object other)
+    public override bool Equals(object other)
     {
         DecimalNumber otherDecimalNumber = (DecimalNumber)other;
         if (otherDecimalNumber == null)
@@ -236,19 +236,19 @@ public class DecimalNumber : IComparable<DecimalNumber>
         /// <param name="numberOfFractionalDigits">The maximum number of fractional digits the input number is supposed to have.</param>
         /// 
         /// <returns>Wether the input has the proper format to be parsed.</returns>
-        public static bool isValidInput(int numberOfFractionalDigits, string input)
+        public static bool IsValidInput(int numberOfFractionalDigits, string input)
         {
-            if (input == null || numberOfFractionalDigits < 0 || !getDecimalRegex(numberOfFractionalDigits).IsMatch(input))
+            if (input == null || numberOfFractionalDigits < 0 || !GetDecimalRegex(numberOfFractionalDigits).IsMatch(input))
             {
                 return false;
             }
 
-            input = formatInput(numberOfFractionalDigits, input);
+            input = FormatInput(numberOfFractionalDigits, input);
             if (input.Contains(','))
             {
                 input = input.Remove(input.IndexOf(","), 1);
             }
-            return !isNumberTooLargeForInt32(input);
+            return !IsNumberTooLargeForInt32(input);
         }
 
         /// <param name="input">The user's input.</param>
@@ -257,11 +257,11 @@ public class DecimalNumber : IComparable<DecimalNumber>
         /// <returns>An integer representing the input.</returns>
         /// 
         /// <require>InputParser.isValidInput(input)</require>
-        public static int parseInput(int numberOfFractionalDigits, string input)
+        public static int ParseInput(int numberOfFractionalDigits, string input)
         {
-            Regex inputRegex = getDecimalRegex(numberOfFractionalDigits);
+            Regex inputRegex = GetDecimalRegex(numberOfFractionalDigits);
 
-            Match inputMatch = inputRegex.Match(formatInput(numberOfFractionalDigits, input));
+            Match inputMatch = inputRegex.Match(FormatInput(numberOfFractionalDigits, input));
             object[] inputGroups = new object[4];
             inputMatch.Groups.CopyTo(inputGroups, 0);
 
@@ -276,7 +276,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
         /// <returns>Ob der Wert von zahl größer ist, als Integer.MAX_VALUE.</returns>
         /// 
         /// <require>new System.Text.RegularExpressions.Regex(@"(?&lt;!.)\d*(?!.)", RegexOptions.ECMAScript).IsMatch(number)</require>
-        public static bool isNumberTooLargeForInt32(string number)
+        public static bool IsNumberTooLargeForInt32(string number)
         {
             while (number.Length > 0 && number.First() == '0')
             {
@@ -301,7 +301,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
             return false;
         }
 
-        private static Regex getDecimalRegex(int numberOfFractionalDigits)
+        private static Regex GetDecimalRegex(int numberOfFractionalDigits)
         {
             Regex result;
             if (!DecimalNumberRegexes.ContainsKey(numberOfFractionalDigits))
@@ -312,9 +312,9 @@ public class DecimalNumber : IComparable<DecimalNumber>
             return result;
         }
 
-        private static string formatInput(int numberOfFractionalDigits, string input)
+        private static string FormatInput(int numberOfFractionalDigits, string input)
         {
-            Match inputMatch = getDecimalRegex(numberOfFractionalDigits).Match(input);
+            Match inputMatch = GetDecimalRegex(numberOfFractionalDigits).Match(input);
 
             object[] groups = new object[4];
             inputMatch.Groups.CopyTo(groups, 0);
@@ -329,7 +329,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
                 resultIntegerDigits = inputIntegerDigits;
             }
 
-            string resultFractionalDigits = formatFractionalDigits(numberOfFractionalDigits, inputFractionalDigits);
+            string resultFractionalDigits = FormatFractionalDigits(numberOfFractionalDigits, inputFractionalDigits);
 
             if (resultFractionalDigits == "")
             {
@@ -339,7 +339,7 @@ public class DecimalNumber : IComparable<DecimalNumber>
             return resultIntegerDigits + "," + resultFractionalDigits;
         }
 
-        private static string formatFractionalDigits(int numberOfFractionalDigits, string inputFractionalDigits)
+        private static string FormatFractionalDigits(int numberOfFractionalDigits, string inputFractionalDigits)
         {
             string resultFractionalDigits = inputFractionalDigits;
             int missingDigits = numberOfFractionalDigits - inputFractionalDigits.Count();
